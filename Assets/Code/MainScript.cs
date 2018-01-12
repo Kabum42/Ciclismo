@@ -2,6 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using System.Xml;
+using System.Xml.Linq;
+using System.IO;
+using System;
+using SimpleJSON;
+using UnityEngine.UI;
 
 public class MainScript : MonoBehaviour {
 
@@ -15,6 +21,7 @@ public class MainScript : MonoBehaviour {
 	private TextMeshProUGUI timeText;
 	private TextMeshProUGUI kmText;
 	private TextMeshProUGUI velocityText;
+	private Image weatherImage;
 
 	public float kmRefresh = 10f;
 	private float currentKmRefresh;
@@ -32,6 +39,8 @@ public class MainScript : MonoBehaviour {
 		timeText = canvas.transform.Find ("Time").GetComponent<TextMeshProUGUI>();
 		kmText = canvas.transform.Find ("Km").GetComponent<TextMeshProUGUI>();
 		velocityText = canvas.transform.Find ("Velocity").GetComponent<TextMeshProUGUI>();
+
+		weatherImage = canvas.transform.Find ("Weather/Image").GetComponent<Image> ();
 
 		/*
 		// First, check if user has location service enabled
@@ -68,6 +77,9 @@ public class MainScript : MonoBehaviour {
 			hasLocation = true;
 			locInfo = Input.location.lastData;
 		}
+
+		StartCoroutine (GetClimate ());
+
 	}
 	
 	// Update is called once per frame
@@ -90,8 +102,67 @@ public class MainScript : MonoBehaviour {
 
 		positionText.text = "Posición: " + Input.location.lastData.latitude.ToString("0.00") + ", " + Input.location.lastData.longitude.ToString("0.00") + ", " + Input.location.lastData.altitude.ToString("0.00");
 
-		//print("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
+	}
+
+	private IEnumerator GetClimate() {
+
+		//string url = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139&lang=nl&units=metric&appid=b1b15e88fa797225412429c1c50c122a1";
+		string url = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=a67539c9e5e7f503107ca2c1be8faf28";
+
+		//get the current weather
+		WWW request = new WWW(url); //get our weather
+		yield return request;
+
+		if (request.error == null || request.error == "")
+		{
+			var N = JSON.Parse(request.text);
+
+			string temp = N["main"]["temp"].Value; //get the temperature
+			float tempTemp; //variable to hold the parsed temperature
+			float.TryParse(temp, out tempTemp); //parse the temperature
+			float finalTemp = Mathf.Round((tempTemp - 273.0f)*10)/10; //holds the actual converted temperature
+
+			//conditionName = N["weather"][0]["main"].Value; //get the current condition Name
+			string conditionName = N["weather"][0]["description"].Value; //get the current condition Description
+			string conditionImage = N["weather"][0]["icon"].Value; //get the current condition Image
+
+			Debug.Log ("Temperature: " + finalTemp);
+			Debug.Log ("Condition name: " + conditionName);
+
+			//get our weather image
+			WWW conditionRequest = new WWW("http://openweathermap.org/img/w/" + conditionImage + ".png");
+			yield return conditionRequest;
+
+			if (conditionRequest.error == null || conditionRequest.error == "")
+			{
+				weatherImage.sprite = Sprite.Create(conditionRequest.texture, new Rect(0, 0, conditionRequest.texture.width, conditionRequest.texture.height), Vector2.zero);
+				weatherImage.gameObject.SetActive (true);
+			}
+			else
+			{
+				Debug.Log("WWW error: " + conditionRequest.error);
+			}
+
+		}
+		else
+		{
+			Debug.Log("WWW error: " + request.error);
+		}
+
+	}
+
+	public static string GetTextWithoutBOM(byte[] bytes)
+	{
+		MemoryStream memoryStream = new MemoryStream(bytes);
+		StreamReader streamReader = new StreamReader(memoryStream, true);
+
+		string result = streamReader.ReadToEnd();
+
+		streamReader.Close();
+		memoryStream.Close();
+
+		return result;
 	}
 
 	private void UpdateKm() {
