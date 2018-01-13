@@ -21,6 +21,7 @@ public class MainScript : MonoBehaviour {
 	private TextMeshProUGUI timeText;
 	private TextMeshProUGUI kmText;
 	private TextMeshProUGUI velocityText;
+	private TextMeshProUGUI temperatureText;
 	private Image weatherImage;
 
 	public float kmRefresh = 10f;
@@ -39,11 +40,10 @@ public class MainScript : MonoBehaviour {
 		timeText = canvas.transform.Find ("Time").GetComponent<TextMeshProUGUI>();
 		kmText = canvas.transform.Find ("Km").GetComponent<TextMeshProUGUI>();
 		velocityText = canvas.transform.Find ("Velocity").GetComponent<TextMeshProUGUI>();
-
-		weatherImage = canvas.transform.Find ("Weather/Image").GetComponent<Image> ();
+		temperatureText = canvas.transform.Find ("Temperature").GetComponent<TextMeshProUGUI> ();
+		weatherImage = canvas.transform.Find ("WeatherImage").GetComponent<Image> ();
 
 		/*
-		// First, check if user has location service enabled
 		if (!Input.location.isEnabledByUser)
 			yield break;
 		*/
@@ -53,14 +53,14 @@ public class MainScript : MonoBehaviour {
 
 		// Wait until service initializes
 		float maxWait = 20f;
-		while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
+		while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0f)
 		{
 			maxWait -= Time.deltaTime;
 			yield return null;
 		}
 
 		// Service didn't initialize in 20 seconds
-		if (maxWait < 1)
+		if (maxWait <= 0f)
 		{
 			Debug.Log("Timed out");
 			yield break;
@@ -69,16 +69,15 @@ public class MainScript : MonoBehaviour {
 		// Connection has failed
 		if (Input.location.status == LocationServiceStatus.Failed)
 		{
-			print("Unable to determine device location");
+			Debug.Log("Unable to determine device location");
 			yield break;
 		}
 		else
 		{
 			hasLocation = true;
 			locInfo = Input.location.lastData;
+			StartCoroutine (GetClimate ());
 		}
-
-		StartCoroutine (GetClimate ());
 
 	}
 	
@@ -107,8 +106,7 @@ public class MainScript : MonoBehaviour {
 
 	private IEnumerator GetClimate() {
 
-		//string url = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139&lang=nl&units=metric&appid=b1b15e88fa797225412429c1c50c122a1";
-		string url = "http://api.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=a67539c9e5e7f503107ca2c1be8faf28";
+		string url = "http://api.openweathermap.org/data/2.5/weather?lat=" + locInfo.latitude + "&lon=" + locInfo.longitude + "&appid=a67539c9e5e7f503107ca2c1be8faf28";
 
 		//get the current weather
 		WWW request = new WWW(url); //get our weather
@@ -124,11 +122,13 @@ public class MainScript : MonoBehaviour {
 			float finalTemp = Mathf.Round((tempTemp - 273.0f)*10)/10; //holds the actual converted temperature
 
 			//conditionName = N["weather"][0]["main"].Value; //get the current condition Name
-			string conditionName = N["weather"][0]["description"].Value; //get the current condition Description
+			//string conditionName = N["weather"][0]["description"].Value; //get the current condition Description
+			//Debug.Log ("Condition name: " + conditionName);
+
 			string conditionImage = N["weather"][0]["icon"].Value; //get the current condition Image
 
-			Debug.Log ("Temperature: " + finalTemp);
-			Debug.Log ("Condition name: " + conditionName);
+			temperatureText.text = finalTemp + "°C";
+			temperatureText.gameObject.SetActive (true);
 
 			//get our weather image
 			WWW conditionRequest = new WWW("http://openweathermap.org/img/w/" + conditionImage + ".png");
