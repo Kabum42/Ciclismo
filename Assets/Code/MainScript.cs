@@ -21,6 +21,7 @@ public class MainScript : MonoBehaviour {
 	private TextMeshProUGUI timeText;
 	private TextMeshProUGUI kmText;
 	private TextMeshProUGUI velocityText;
+	private TextMeshProUGUI caloriesText;
 	private TextMeshProUGUI temperatureText;
 	private Image weatherImage;
 
@@ -40,6 +41,7 @@ public class MainScript : MonoBehaviour {
 		timeText = canvas.transform.Find ("Time").GetComponent<TextMeshProUGUI>();
 		kmText = canvas.transform.Find ("Km").GetComponent<TextMeshProUGUI>();
 		velocityText = canvas.transform.Find ("Velocity").GetComponent<TextMeshProUGUI>();
+		caloriesText = canvas.transform.Find ("Calories").GetComponent<TextMeshProUGUI> ();
 		temperatureText = canvas.transform.Find ("Temperature").GetComponent<TextMeshProUGUI> ();
 		weatherImage = canvas.transform.Find ("WeatherImage").GetComponent<Image> ();
 
@@ -152,6 +154,15 @@ public class MainScript : MonoBehaviour {
 
 	}
 
+	private static double GetCalories(double km) {
+
+		// On average, you burn 36 calories cycling for mile.
+		// One mile is equal 1.6 km.
+		double miles = km / 1.60934f;
+		return miles * 36f;
+
+	}
+
 	public static string GetTextWithoutBOM(byte[] bytes)
 	{
 		MemoryStream memoryStream = new MemoryStream(bytes);
@@ -172,6 +183,7 @@ public class MainScript : MonoBehaviour {
 		kmText.text = "Km Recorridos: " + km.ToString ("0.00");
 		locInfo = Input.location.lastData;
 		velocityText.text = "Velocidad: " + (km / time).ToString ("0.00") + " Km/s";
+		caloriesText.text = "Calorías: " + GetCalories (km).ToString("0");
 
 	}
 
